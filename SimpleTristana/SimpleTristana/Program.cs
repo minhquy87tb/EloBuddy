@@ -1,0 +1,278 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using EloBuddy;
+using EloBuddy.SDK;
+using EloBuddy.SDK.Enumerations;
+using EloBuddy.SDK.Events;
+using EloBuddy.SDK.Menu;
+using EloBuddy.SDK.Menu.Values;
+using EloBuddy.SDK.Rendering;
+using Color = System.Drawing.Color;
+
+namespace SimpleTristana
+{
+    class Program
+    {
+        //Skills
+        public static Spell.Active Q;
+        public static Spell.Skillshot W;
+        public static Spell.Targeted E;
+        public static Spell.Targeted R;
+
+        //MenuVars
+        public static Menu Menu,
+        ComboMenu,
+        HarassMenu,
+        FarmMenu,
+        KsMenu,
+        MiscMenu,
+        InterruptorMenu,
+        GapCloserMenu;
+
+
+        static void Main(string[] args)
+        {
+            Loading.OnLoadingComplete += Game_OnStart;
+        }
+
+        public static AIHeroClient _Player
+        {
+            get { return ObjectManager.Player; }
+        }
+
+        private static void Game_OnStart(EventArgs args)
+        {
+            TargetSelector2.Init();
+            Bootstrap.Init(null);
+            uint level = (uint)Player.Instance.Level;
+            Q = new Spell.Active(SpellSlot.Q, 543 + level * 7);
+            W = new Spell.Skillshot(SpellSlot.W, 825, SkillShotType.Circular, (int)0.25f, Int32.MaxValue, (int)80f);
+            E = new Spell.Targeted(SpellSlot.E, 543 + level * 7);
+            R = new Spell.Targeted(SpellSlot.R, 543 + level * 7);
+
+            Menu = MainMenu.AddMenu("Simple Tristana", "simpleTrist");
+            Menu.AddGroupLabel("Simple Tristana");
+            Menu.AddLabel("Version: " + "0.0.0.1 - 20.09.2015 23:00");
+            Menu.AddSeparator();
+            Menu.AddLabel("By Pataxx");
+            Menu.AddSeparator();
+            Menu.AddLabel("Thanks to: Finndev, Hellsing, Fluxy");
+            Menu.AddSeparator();
+            Menu.AddLabel("Features coming soon:");
+            Menu.AddLabel("Activator, Anti-Gapcloser, Manmode-Combo, Auto-Levelup");
+
+            ComboMenu = Menu.AddSubMenu("Combo", "SimpleCombo");
+            ComboMenu.AddGroupLabel("Combo Settings");
+            ComboMenu.Add("useQCombo", new CheckBox("Use Q", true));
+            ComboMenu.Add("useECombo", new CheckBox("Use E", true));
+            ComboMenu.Add("useRCombo", new CheckBox("Use R", true));
+            ComboMenu.AddLabel("Finisher Settings");
+            ComboMenu.Add("useERFinish", new CheckBox("Allow E + R Finish", true));
+            ComboMenu.Add("useWFinish", new CheckBox("Allow W Finish", false));
+
+            HarassMenu = Menu.AddSubMenu("Harass", "SimpleHarass");
+            HarassMenu.AddGroupLabel("Harass Settings");
+            HarassMenu.Add("useQHarass", new CheckBox("Use Q", false));
+            HarassMenu.Add("useEHarass", new CheckBox("Use E", false));
+
+            FarmMenu = Menu.AddSubMenu("Laneclear", "SimpleClear");
+            FarmMenu.AddGroupLabel("Laneclear Settings");
+            FarmMenu.Add("useQLane", new CheckBox("Use Q", false));
+            FarmMenu.Add("useELane", new CheckBox("Use E", false));
+            FarmMenu.Add("useELaneT", new CheckBox("Use E on Tower", false));
+
+            KsMenu = Menu.AddSubMenu("Killsteal", "SimpleKS");
+            KsMenu.AddGroupLabel("Killsteal Settings");
+            KsMenu.Add("useRKs", new CheckBox("Use R", true));
+            KsMenu.AddGroupLabel("You wanna die? Enable this:");
+            KsMenu.Add("useWKs", new CheckBox("Use W", false));
+
+
+
+            MiscMenu = Menu.AddSubMenu("Misc", "SimpleDraw");
+            MiscMenu.AddGroupLabel("Finisher Tweaks");
+            MiscMenu.Add("ERBuffer", new Slider("E-R Damage-Buffer", 25, 0, 500));
+            MiscMenu.Add("RBuffer", new Slider("R Damage-Buffer", 25, 0, 500));
+            MiscMenu.Add("WBuffer", new Slider("W Damage-Buffer", 25, 0, 500));
+            MiscMenu.AddGroupLabel("Draw Settings");
+            MiscMenu.Add("drawAA", new CheckBox("Draw AA / E / R", true));
+            MiscMenu.Add("drawW", new CheckBox("Draw W", true));
+
+
+
+            Game.OnTick += Game_OnTick;
+            Drawing.OnDraw += Drawing_OnDraw;
+
+        }
+        private static void Game_OnTick(EventArgs args)
+        {
+             if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
+             {
+                 Combo();
+             }
+             if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
+             {
+                 Harass();
+             }
+            if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear))
+            {
+                LaneClear();
+            }
+            KillSteal();
+
+        }
+        
+        
+        //Skills      
+        public static float RDamage(Obj_AI_Base target)
+        {
+            return _Player.CalculateDamageOnUnit(target, DamageType.Magical,
+                (float)(new[] { 300, 400, 500 }[Program.R.Level] + 1.0 * _Player.FlatMagicDamageMod));
+        }
+        public static float WDamage(Obj_AI_Base target)
+        {
+            return _Player.CalculateDamageOnUnit(target, DamageType.Magical,
+                            (float)(new[] { 80, 105, 130, 155, 180 }[Program.W.Level] + 0.5 * _Player.FlatMagicDamageMod));
+        }
+        public static float EDamage(Obj_AI_Base target)
+        {
+            return _Player.CalculateDamageOnUnit(target, DamageType.Physical,
+                                        (float)(new[] { 60, 70, 80, 90, 100 }[Program.E.Level - 1] + new[] { 0.5, 0.65, 0.80, 0.95, 1.1 }[Program.E.Level - 1] * _Player.FlatPhysicalDamageMod + 0.5 * _Player.FlatMagicDamageMod + (new[] { 18, 21, 24, 27, 30 }[Program.E.Level - 1] + new[] { 0.15, 0.195, 0.24, 0.285, 0.33 }[Program.E.Level - 1]+ 0.15 * _Player.FlatMagicDamageMod)));
+        }
+        //---------------------------
+        //---------------------------
+        //---------------------------
+
+        //Stuff
+        private static void KillSteal()
+        {
+            var useR = KsMenu["useRKs"].Cast<CheckBox>().CurrentValue;
+            var useW = KsMenu["useWKs"].Cast<CheckBox>().CurrentValue;
+
+            foreach (var target in HeroManager.Enemies.Where(hero => hero.IsValidTarget(2000) && !hero.IsDead && !hero.IsZombie))
+            {
+                if (useR && R.IsReady() && target.Health + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < RDamage(target))
+                {
+                        R.Cast(target);
+                }
+
+                if (useW && W.IsReady() && target.Health + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < WDamage(target))
+                {
+                    W.Cast(target);
+                }
+
+            }
+        }
+        //---------------------------
+        //---------------------------
+        //---------------------------
+
+        //States
+        private static void Combo()
+        {
+            
+            var useQ = ComboMenu["useQCombo"].Cast<CheckBox>().CurrentValue;
+            var useE = ComboMenu["useECombo"].Cast<CheckBox>().CurrentValue;
+            var useR = ComboMenu["useRCombo"].Cast<CheckBox>().CurrentValue;
+
+            var useER = ComboMenu["useERFinish"].Cast<CheckBox>().CurrentValue;
+            var useWf = ComboMenu["useWFinish"].Cast<CheckBox>().CurrentValue;
+
+            foreach (var target in HeroManager.Enemies.Where(o => o.IsValidTarget(Q.Range) && !o.IsDead && !o.IsZombie))
+            {
+                if (useE && E.IsReady() && target.IsValidTarget(E.Range))
+                {
+                    E.Cast(target);
+                }
+                if (useQ && Q.IsReady() && target.IsValidTarget(Q.Range))
+                {
+                    Q.Cast();
+                }
+                if (useR && R.IsReady() && target.IsValidTarget(R.Range) && target.Health + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < RDamage(target))
+                {
+                    R.Cast(target);
+                }
+
+                if (useWf && W.IsReady()&& target.IsValidTarget(W.Range) && target.Health + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < WDamage(target))
+                {
+                    W.Cast(target);
+                }
+                if(useER && E.IsReady() && R.IsReady()&& target.HasBuff("tristanaecharge") && EDamage(target)*((0.3 * target.Buffs.Find(a => a.Name == "tristanaecharge").Count) +1)+RDamage(target) > target.Health + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue)
+                {
+                    R.Cast(target);
+                }
+                
+            }
+            
+        } 
+
+        private static void Harass()
+        {
+            var hasBuffTristE = Player.Instance.HasBuff("tristanaecharge");
+            var useQ = HarassMenu["useQHarass"].Cast<CheckBox>().CurrentValue;
+            var useE = HarassMenu["useEHarass"].Cast<CheckBox>().CurrentValue;
+            foreach (var target in HeroManager.Enemies.Where(o => o.IsValidTarget(Q.Range) && !o.IsDead && !o.IsZombie))
+            {
+                if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range))
+                {
+                    W.Cast(target);
+                }
+                if (useQ && Q.IsReady() && target.IsValidTarget(Q.Range))
+                {
+                    Q.Cast();
+                }
+            }
+
+        }
+
+        private static void LaneClear()
+        {
+            var minion = ObjectManager.Get<Obj_AI_Minion>().FirstOrDefault(a => a.IsEnemy && !a.IsDead && a.Distance(_Player) < _Player.AttackRange);
+            var tower = ObjectManager.Get<Obj_AI_Turret>().FirstOrDefault(a => a.IsEnemy && !a.IsDead && a.Distance(_Player) < _Player.AttackRange);
+            if (minion == null)
+                if (tower == null)
+                    return;
+            var useQ = FarmMenu["useQLane"].Cast<CheckBox>().CurrentValue;
+            var useE = FarmMenu["useELane"].Cast<CheckBox>().CurrentValue;
+            var useET = FarmMenu["useELaneT"].Cast<CheckBox>().CurrentValue;
+
+
+            if (useE && E.IsReady() && (tower == null))
+            {
+                Orbwalker.ForcedTarget = minion;
+                E.Cast(minion);
+            }
+            if (useQ && Q.IsReady())
+            {
+                Q.Cast();
+            }
+            if (useET && E.IsReady())
+            {
+                Orbwalker.ForcedTarget = tower;
+                E.Cast(tower);
+            }
+        }
+        //---------------------------
+        //---------------------------
+        //---------------------------
+
+        //Drawings
+        private static void Drawing_OnDraw(EventArgs args)
+        {
+            if (MiscMenu["drawAA"].Cast<CheckBox>().CurrentValue)
+            {
+                new Circle() { Color = Color.Red, BorderWidth = 1, Radius = Q.Range }.Draw(_Player.Position);
+            }
+            if (MiscMenu["drawW"].Cast<CheckBox>().CurrentValue)
+            {
+                new Circle() { Color = Color.Blue, BorderWidth = 1, Radius = W.Range }.Draw(_Player.Position);
+            }
+        }
+        //---------------------------
+        //---------------------------
+        //---------------------------
+    }
+}
