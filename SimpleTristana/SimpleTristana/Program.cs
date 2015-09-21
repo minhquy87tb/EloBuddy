@@ -55,15 +55,15 @@ namespace SimpleTristana
 
             Menu = MainMenu.AddMenu("Simple Tristana", "simpleTrist");
             Menu.AddGroupLabel("Simple Tristana");
-            Menu.AddLabel("Version: " + "1.0.0.3 - 21.09.2015 12:30 GMT+2");
-            Menu.AddLabel("New: " + "Auto Levelup");
+            Menu.AddLabel("Version: " + "1.0.1.0 - 21.09.2015 12:30 GMT+2");
+            Menu.AddLabel("New: " + "Activator");
             Menu.AddSeparator();
             Menu.AddLabel("By Pataxx");
             Menu.AddSeparator();
             Menu.AddLabel("Thanks to: Finndev, Hellsing, Fluxy");
             Menu.AddSeparator();
             Menu.AddLabel("Features coming soon:");
-            Menu.AddLabel("Activator, Manmode-Combo");
+            Menu.AddLabel("Manmode-Combo, Anti Gapcloser(waiting for SDK fix)");
 
             ComboMenu = Menu.AddSubMenu("Combo", "SimpleCombo");
             ComboMenu.AddGroupLabel("Combo Settings");
@@ -107,7 +107,7 @@ namespace SimpleTristana
             MiscMenu.Add("drawW", new CheckBox("Draw W", true));
             MiscMenu.AddGroupLabel("Stuff");
             MiscMenu.Add("autoLv", new CheckBox("Auto Levelup", true));
-
+            Activator.init();
 
 
             Game.OnTick += Game_OnTick;
@@ -120,7 +120,6 @@ namespace SimpleTristana
         }
         private static void Game_OnTick(EventArgs args)
         {
-            Orbwalker.ForcedTarget = null;
              if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
              {
                  Combo();
@@ -287,7 +286,6 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
 
             if (useE && E.IsReady() && (tower == null))
             {
-                Orbwalker.ForcedTarget = minion;
                 E.Cast(minion);
             }
             if (useQ && Q.IsReady())
@@ -296,7 +294,6 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
             }
             if (useET && E.IsReady())
             {
-                Orbwalker.ForcedTarget = tower;
                 E.Cast(tower);
             }
         }
