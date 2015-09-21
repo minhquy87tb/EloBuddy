@@ -21,7 +21,7 @@ namespace SimpleTristana
         public static Spell.Skillshot W;
         public static Spell.Targeted E;
         public static Spell.Targeted R;
-
+        public static int[] levelUps = { 2, 0, 1, 2, 2, 3, 2, 0 , 2, 0, 3, 0, 0, 1, 1, 3, 1, 1};
         //MenuVars
         public static Menu Menu,
         ComboMenu,
@@ -55,15 +55,15 @@ namespace SimpleTristana
 
             Menu = MainMenu.AddMenu("Simple Tristana", "simpleTrist");
             Menu.AddGroupLabel("Simple Tristana");
-            Menu.AddLabel("Version: " + "0.0.0.2 - 21.09.2015 11:30 GMT+2");
-            Menu.AddLabel("New: " + "Some fixes");
+            Menu.AddLabel("Version: " + "1.0.0.3 - 21.09.2015 12:30 GMT+2");
+            Menu.AddLabel("New: " + "Auto Levelup");
             Menu.AddSeparator();
             Menu.AddLabel("By Pataxx");
             Menu.AddSeparator();
             Menu.AddLabel("Thanks to: Finndev, Hellsing, Fluxy");
             Menu.AddSeparator();
             Menu.AddLabel("Features coming soon:");
-            Menu.AddLabel("Activator, Manmode-Combo, Auto-Levelup");
+            Menu.AddLabel("Activator, Manmode-Combo");
 
             ComboMenu = Menu.AddSubMenu("Combo", "SimpleCombo");
             ComboMenu.AddGroupLabel("Combo Settings");
@@ -105,10 +105,14 @@ namespace SimpleTristana
             MiscMenu.AddGroupLabel("Draw Settings");
             MiscMenu.Add("drawAA", new CheckBox("Draw AA / E / R", true));
             MiscMenu.Add("drawW", new CheckBox("Draw W", true));
+            MiscMenu.AddGroupLabel("Stuff");
+            MiscMenu.Add("autoLv", new CheckBox("Auto Levelup", true));
 
 
 
             Game.OnTick += Game_OnTick;
+            Game.OnUpdate += Game_OnUpdate;
+
             Drawing.OnDraw += Drawing_OnDraw;
             //Gapcloser.OnGapCloser += Gapcloser_OnGapCloser;
             GameObject.OnCreate += GameObject_OnCreate;
@@ -315,5 +319,26 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
         //---------------------------
         //---------------------------
         //---------------------------
+
+        //-------------
+        private static void Game_OnUpdate(EventArgs args)
+        {
+            if(MiscMenu["autoLv"].Cast<CheckBox>().CurrentValue)
+            { 
+                if (_Player.Spellbook.GetSpell(SpellSlot.Q).Level + _Player.Spellbook.GetSpell(SpellSlot.W).Level + _Player.Spellbook.GetSpell(SpellSlot.E).Level + _Player.Spellbook.GetSpell(SpellSlot.R).Level < _Player.Level)
+                {
+                    
+                    int[] levels = new int[] { 0, 0, 0, 0 };
+                    for (int i = 0; i < ObjectManager.Player.Level; i++)
+                    {
+                        levels[levelUps[i]] = levels[levelUps[i]] + 1;
+                    }
+                    if (_Player.Spellbook.GetSpell(SpellSlot.Q).Level < levels[0]) _Player.Spellbook.LevelSpell(SpellSlot.Q);
+                    if (_Player.Spellbook.GetSpell(SpellSlot.W).Level < levels[1]) _Player.Spellbook.LevelSpell(SpellSlot.W);
+                    if (_Player.Spellbook.GetSpell(SpellSlot.E).Level < levels[2]) _Player.Spellbook.LevelSpell(SpellSlot.E);
+                    if (_Player.Spellbook.GetSpell(SpellSlot.R).Level < levels[3]) _Player.Spellbook.LevelSpell(SpellSlot.R);
+                }
+            }
+        }
     }
 }
