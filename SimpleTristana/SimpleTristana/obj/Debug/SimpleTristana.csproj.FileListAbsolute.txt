@@ -1,1 +1,2 @@
 c:\users\legend\documents\visual studio 2015\EloBuddy\stuff\SimpleTristana\SimpleTristana\bin\Debug\SimpleTristana.exe.config
+C:\Users\Legend\Documents\Visual Studio 2015\EloBuddy\EloBuddy\SimpleTristana\SimpleTristana\bin\Debug\SimpleTristana.exe.config

@@ -55,14 +55,15 @@ namespace SimpleTristana
 
             Menu = MainMenu.AddMenu("Simple Tristana", "simpleTrist");
             Menu.AddGroupLabel("Simple Tristana");
-            Menu.AddLabel("Version: " + "0.0.0.1 - 20.09.2015 23:00");
+            Menu.AddLabel("Version: " + "0.0.0.2 - 21.09.2015 11:30 GMT+2");
+            Menu.AddLabel("New: " + "Some fixes");
             Menu.AddSeparator();
             Menu.AddLabel("By Pataxx");
             Menu.AddSeparator();
             Menu.AddLabel("Thanks to: Finndev, Hellsing, Fluxy");
             Menu.AddSeparator();
             Menu.AddLabel("Features coming soon:");
-            Menu.AddLabel("Activator, Anti-Gapcloser, Manmode-Combo, Auto-Levelup");
+            Menu.AddLabel("Activator, Manmode-Combo, Auto-Levelup");
 
             ComboMenu = Menu.AddSubMenu("Combo", "SimpleCombo");
             ComboMenu.AddGroupLabel("Combo Settings");
@@ -97,6 +98,10 @@ namespace SimpleTristana
             MiscMenu.Add("ERBuffer", new Slider("E-R Damage-Buffer", 25, 0, 500));
             MiscMenu.Add("RBuffer", new Slider("R Damage-Buffer", 25, 0, 500));
             MiscMenu.Add("WBuffer", new Slider("W Damage-Buffer", 25, 0, 500));
+            /*MiscMenu.AddGroupLabel("Anti-Gapcloser");
+            MiscMenu.Add("antiGC", new CheckBox("Basic Anti-Gapcloser", true));
+            MiscMenu.Add("antiKitty", new CheckBox("Anti Rengar", true));
+            MiscMenu.Add("antiBug", new CheckBox("Anti Kha'Zix", true));*/
             MiscMenu.AddGroupLabel("Draw Settings");
             MiscMenu.Add("drawAA", new CheckBox("Draw AA / E / R", true));
             MiscMenu.Add("drawW", new CheckBox("Draw W", true));
@@ -105,10 +110,13 @@ namespace SimpleTristana
 
             Game.OnTick += Game_OnTick;
             Drawing.OnDraw += Drawing_OnDraw;
+            //Gapcloser.OnGapCloser += Gapcloser_OnGapCloser;
+            GameObject.OnCreate += GameObject_OnCreate;
 
         }
         private static void Game_OnTick(EventArgs args)
         {
+            Orbwalker.ForcedTarget = null;
              if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
              {
                  Combo();
@@ -124,8 +132,39 @@ namespace SimpleTristana
             KillSteal();
 
         }
-        
-        
+
+
+        //SDK needs to get fixed first.
+        /*public static void Gapcloser_OnGapCloser(AIHeroClient sender, Gapcloser.GapCloserEventArgs e)
+        {
+            if (sender.IsValidTarget(R.Range))
+            {
+                Chat.Print("AUA");
+            }
+        }
+        */
+
+private static void GameObject_OnCreate(GameObject sender, EventArgs args)
+        {
+            /*
+            var kitty = HeroManager.Enemies.Find(h => h.ChampionName.Equals("Rengar"));
+            var khazix = HeroManager.Enemies.Find(h => h.ChampionName.Equals("Khazix"));
+
+            //AntiKitty #FAKURENGO
+            if (kitty != null)
+            {
+                if (sender.Name == ("Rengar_LeapSound.troy") && MiscMenu["antiKitty"].Cast<CheckBox>().CurrentValue && sender.Position.Distance(_Player) < R.Range)
+                    R.Cast(kitty);
+            }
+
+            //ANTSPRAYY
+            if (khazix != null)
+            {
+                if (sender.Name == ("Khazix_Base_E_Tar.troy") && MiscMenu["antiBug"].Cast<CheckBox>().CurrentValue && sender.Position.Distance(_Player) <= 400)
+                    R.Cast(khazix);
+            }*/
+        }
+
         //Skills      
         public static float RDamage(Obj_AI_Base target)
         {
@@ -152,7 +191,7 @@ namespace SimpleTristana
             var useR = KsMenu["useRKs"].Cast<CheckBox>().CurrentValue;
             var useW = KsMenu["useWKs"].Cast<CheckBox>().CurrentValue;
 
-            foreach (var target in HeroManager.Enemies.Where(hero => hero.IsValidTarget(2000) && !hero.IsDead && !hero.IsZombie))
+            foreach (var target in HeroManager.Enemies.Where(hero => hero.IsValidTarget(W.Range) && !hero.IsDead && !hero.IsZombie && hero.HealthPercent <=25))
             {
                 if (useR && R.IsReady() && target.Health + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < RDamage(target))
                 {
@@ -173,7 +212,10 @@ namespace SimpleTristana
         //States
         private static void Combo()
         {
-            
+            var target = TargetSelector.GetTarget(1250, DamageType.Physical);
+            if (target == null) return;
+
+
             var useQ = ComboMenu["useQCombo"].Cast<CheckBox>().CurrentValue;
             var useE = ComboMenu["useECombo"].Cast<CheckBox>().CurrentValue;
             var useR = ComboMenu["useRCombo"].Cast<CheckBox>().CurrentValue;
@@ -181,8 +223,8 @@ namespace SimpleTristana
             var useER = ComboMenu["useERFinish"].Cast<CheckBox>().CurrentValue;
             var useWf = ComboMenu["useWFinish"].Cast<CheckBox>().CurrentValue;
 
-            foreach (var target in HeroManager.Enemies.Where(o => o.IsValidTarget(Q.Range) && !o.IsDead && !o.IsZombie))
-            {
+            if (Orbwalker.IsAutoAttacking) return;
+
                 if (useE && E.IsReady() && target.IsValidTarget(E.Range))
                 {
                     E.Cast(target);
@@ -205,26 +247,25 @@ namespace SimpleTristana
                     R.Cast(target);
                 }
                 
-            }
             
         } 
 
         private static void Harass()
         {
-            var hasBuffTristE = Player.Instance.HasBuff("tristanaecharge");
+            var target = TargetSelector.GetTarget(1250, DamageType.Physical);
+            if (target == null) return;
             var useQ = HarassMenu["useQHarass"].Cast<CheckBox>().CurrentValue;
             var useE = HarassMenu["useEHarass"].Cast<CheckBox>().CurrentValue;
-            foreach (var target in HeroManager.Enemies.Where(o => o.IsValidTarget(Q.Range) && !o.IsDead && !o.IsZombie))
+            if (Orbwalker.IsAutoAttacking) return;
+            if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range))
             {
-                if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range))
-                {
-                    W.Cast(target);
-                }
-                if (useQ && Q.IsReady() && target.IsValidTarget(Q.Range))
-                {
-                    Q.Cast();
-                }
+                W.Cast(target);
             }
+            if (useQ && Q.IsReady() && target.IsValidTarget(Q.Range))
+            {
+                Q.Cast();
+            }
+
 
         }
 
