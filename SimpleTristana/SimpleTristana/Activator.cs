@@ -63,7 +63,7 @@ namespace SimpleTristana
 
         private static void Combo()
         {
-            var target = TargetSelector.GetTarget(1250, DamageType.Physical);
+            var target = TargetSelector2.GetTarget(900, DamageType.Physical);
             if (target == null) return;
             if (Orbwalker.IsAutoAttacking) return;
 

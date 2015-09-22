@@ -215,7 +215,7 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
         //States
         private static void Combo()
         {
-            var target = TargetSelector.GetTarget(1250, DamageType.Physical);
+            var target = TargetSelector2.GetTarget(900, DamageType.Physical);
             if (target == null) return;
 
 
@@ -255,7 +255,7 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
 
         private static void Harass()
         {
-            var target = TargetSelector.GetTarget(1250, DamageType.Physical);
+            var target = TargetSelector2.GetTarget(900, DamageType.Physical);
             if (target == null) return;
             var useQ = HarassMenu["useQHarass"].Cast<CheckBox>().CurrentValue;
             var useE = HarassMenu["useEHarass"].Cast<CheckBox>().CurrentValue;
