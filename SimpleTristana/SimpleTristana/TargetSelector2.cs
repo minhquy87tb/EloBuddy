@@ -17,6 +17,13 @@ namespace SimpleTristana
             Drawing.OnDraw += Drawing_OnDraw;
         }
 
+        public static void ClearCurTarget(float range)
+        {
+            var curtarget = Orbwalker.GetTarget();
+            if(!curtarget.IsValidTarget(range) || curtarget.IsDead || curtarget.IsInvulnerable)
+                Orbwalker.ForcedTarget = null;
+        }
+
         private static void Drawing_OnDraw(EventArgs args)
         {
             if (_target != null)

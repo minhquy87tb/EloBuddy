@@ -55,15 +55,15 @@ namespace SimpleTristana
 
             Menu = MainMenu.AddMenu("Simple Tristana", "simpleTrist");
             Menu.AddGroupLabel("Simple Tristana");
-            Menu.AddLabel("Version: " + "1.0.1.0 - 21.09.2015 12:30 GMT+2");
-            Menu.AddLabel("New: " + "Activator");
+            Menu.AddLabel("Version: " + "1.0.3.0 - 09.10.2015 09:41 GMT+2");
+            Menu.AddLabel("New: " + "Anti Gapcloser");
             Menu.AddSeparator();
             Menu.AddLabel("By Pataxx");
             Menu.AddSeparator();
             Menu.AddLabel("Thanks to: Finndev, Hellsing, Fluxy");
             Menu.AddSeparator();
             Menu.AddLabel("Features coming soon:");
-            Menu.AddLabel("Manmode-Combo, Anti Gapcloser(waiting for SDK fix)");
+            Menu.AddLabel("Advanced W logic");
 
             ComboMenu = Menu.AddSubMenu("Combo", "SimpleCombo");
             ComboMenu.AddGroupLabel("Combo Settings");
@@ -98,10 +98,10 @@ namespace SimpleTristana
             MiscMenu.Add("ERBuffer", new Slider("E-R Damage-Buffer", 25, 0, 500));
             MiscMenu.Add("RBuffer", new Slider("R Damage-Buffer", 25, 0, 500));
             MiscMenu.Add("WBuffer", new Slider("W Damage-Buffer", 25, 0, 500));
-            /*MiscMenu.AddGroupLabel("Anti-Gapcloser");
+            MiscMenu.AddGroupLabel("Anti-Gapcloser");
             MiscMenu.Add("antiGC", new CheckBox("Basic Anti-Gapcloser", true));
             MiscMenu.Add("antiKitty", new CheckBox("Anti Rengar", true));
-            MiscMenu.Add("antiBug", new CheckBox("Anti Kha'Zix", true));*/
+            MiscMenu.Add("antiBug", new CheckBox("Anti Kha'Zix", true));
             MiscMenu.AddGroupLabel("Draw Settings");
             MiscMenu.Add("drawAA", new CheckBox("Draw AA / E / R", true));
             MiscMenu.Add("drawW", new CheckBox("Draw W", true));
@@ -114,12 +114,13 @@ namespace SimpleTristana
             Game.OnUpdate += Game_OnUpdate;
 
             Drawing.OnDraw += Drawing_OnDraw;
-            //Gapcloser.OnGapCloser += Gapcloser_OnGapCloser;
+            Gapcloser.OnGapcloser += Gapcloser_OnGapCloser;
             GameObject.OnCreate += GameObject_OnCreate;
 
         }
         private static void Game_OnTick(EventArgs args)
         {
+            TargetSelector2.ClearCurTarget(_Player.AttackRange);
              if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
              {
                  Combo();
@@ -136,36 +137,34 @@ namespace SimpleTristana
 
         }
 
-
-        //SDK needs to get fixed first.
-        /*public static void Gapcloser_OnGapCloser(AIHeroClient sender, Gapcloser.GapCloserEventArgs e)
+        static void Gapcloser_OnGapCloser(Obj_AI_Base sender, Gapcloser.GapcloserEventArgs args)
         {
-            if (sender.IsValidTarget(R.Range))
+            if(MiscMenu["antiGC"].Cast<CheckBox>().CurrentValue && args.Sender.Distance(_Player)<300)
             {
-                Chat.Print("AUA");
+                R.Cast(args.Sender);
             }
         }
-        */
 
-private static void GameObject_OnCreate(GameObject sender, EventArgs args)
+        // Not tested yet, took it from my old L# project
+        private static void GameObject_OnCreate(GameObject sender, EventArgs args)
         {
-            /*
+            
             var kitty = HeroManager.Enemies.Find(h => h.ChampionName.Equals("Rengar"));
             var khazix = HeroManager.Enemies.Find(h => h.ChampionName.Equals("Khazix"));
 
-            //AntiKitty #FAKURENGO
+            //AntiKittyCat-Untermenschenchamp #FAKURENGO
             if (kitty != null)
             {
                 if (sender.Name == ("Rengar_LeapSound.troy") && MiscMenu["antiKitty"].Cast<CheckBox>().CurrentValue && sender.Position.Distance(_Player) < R.Range)
                     R.Cast(kitty);
             }
 
-            //ANTSPRAYY
+            //ANTSPRAYYYYYYYYY
             if (khazix != null)
             {
                 if (sender.Name == ("Khazix_Base_E_Tar.troy") && MiscMenu["antiBug"].Cast<CheckBox>().CurrentValue && sender.Position.Distance(_Player) <= 400)
                     R.Cast(khazix);
-            }*/
+            }
         }
 
         //Skills      
@@ -218,7 +217,7 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
             var target = TargetSelector2.GetTarget(900, DamageType.Physical);
             if (target == null) return;
 
-
+           
             var useQ = ComboMenu["useQCombo"].Cast<CheckBox>().CurrentValue;
             var useE = ComboMenu["useECombo"].Cast<CheckBox>().CurrentValue;
             var useR = ComboMenu["useRCombo"].Cast<CheckBox>().CurrentValue;
@@ -228,6 +227,10 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
 
             if (Orbwalker.IsAutoAttacking) return;
 
+                if (!E.IsReady() && target.IsValidTarget(E.Range) && target.HasBuff("tristanaecharge"))
+                {
+                    Orbwalker.ForcedTarget = target;
+                }
                 if (useE && E.IsReady() && target.IsValidTarget(E.Range))
                 {
                     E.Cast(target);
@@ -249,7 +252,7 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
                 {
                     R.Cast(target);
                 }
-                
+
             
         } 
 
@@ -260,6 +263,7 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
             var useQ = HarassMenu["useQHarass"].Cast<CheckBox>().CurrentValue;
             var useE = HarassMenu["useEHarass"].Cast<CheckBox>().CurrentValue;
             if (Orbwalker.IsAutoAttacking) return;
+
             if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range))
             {
                 W.Cast(target);
@@ -283,19 +287,23 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
             var useE = FarmMenu["useELane"].Cast<CheckBox>().CurrentValue;
             var useET = FarmMenu["useELaneT"].Cast<CheckBox>().CurrentValue;
 
-
-            if (useE && E.IsReady() && (tower == null))
+            if (useET && E.IsReady() && tower.IsValidTarget(E.Range))
             {
-                E.Cast(minion);
+                E.Cast(tower);
+            }
+
+            if (useE && E.IsReady() && minion.IsValidTarget(E.Range))
+            {
+                if (useET && !tower.IsValidTarget(E.Range))
+                    E.Cast(minion);
+                else if(!useET)
+                    E.Cast(minion);
             }
             if (useQ && Q.IsReady())
             {
                 Q.Cast();
             }
-            if (useET && E.IsReady())
-            {
-                E.Cast(tower);
-            }
+
         }
         //---------------------------
         //---------------------------
@@ -317,7 +325,7 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
         //---------------------------
         //---------------------------
 
-        //-------------
+        //Auto-Levelup
         private static void Game_OnUpdate(EventArgs args)
         {
             if(MiscMenu["autoLv"].Cast<CheckBox>().CurrentValue)
@@ -337,5 +345,10 @@ private static void GameObject_OnCreate(GameObject sender, EventArgs args)
                 }
             }
         }
+        //---------------------------
+        //---------------------------
+        //---------------------------
+
+        
     }
 }
