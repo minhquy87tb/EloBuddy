@@ -250,8 +250,8 @@ namespace SimpleTristana
                 {
                     test = Player.Instance.GetSpellDamage(targetE, SpellSlot.E,DamageLibrary.SpellStages.Default) + Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation) +Player.Instance.GetSpellDamage(targetE,SpellSlot.R);
                     R.Cast(targetE);
-                    Chat.Print("meins: " + EDamage(targetE) * ((0.3 * targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count) + 1) + RDamage(targetE));
-                    Chat.Print("eb: " + test);
+                    //Chat.Print("meins: " + EDamage(targetE) * ((0.3 * targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count) + 1) + RDamage(targetE));
+                    //Chat.Print("eb: " + test);
             }
 
             
