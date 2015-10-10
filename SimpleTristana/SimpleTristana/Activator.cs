@@ -142,7 +142,7 @@ namespace SimpleTristana
             if (bilgeCheck != null)
             {
                 var itSlot = bilgeCheck.SpellSlot;
-                foreach (var target in HeroManager.Enemies.Where(hero => hero.IsValidTarget(550) && !hero.IsDead && !hero.IsZombie && hero.Health <= BotrkDamage(hero)))
+                foreach(var target in EntityManager.Heroes.Enemies.Where(hero => hero.IsValidTarget(550) && !hero.IsDead && !hero.IsZombie && hero.Health <= BotrkDamage(hero)))
                 {
                     Player.CastSpell(itSlot, target);
                 }
@@ -151,7 +151,7 @@ namespace SimpleTristana
             if (botrkCheck != null)
             {
                 var itSlot = botrkCheck.SpellSlot;
-                foreach (var target in HeroManager.Enemies.Where(hero => hero.IsValidTarget(550) && !hero.IsDead && !hero.IsZombie && hero.Health <= BotrkDamage(hero)))
+                foreach (var target in EntityManager.Heroes.Enemies.Where(hero => hero.IsValidTarget(550) && !hero.IsDead && !hero.IsZombie && hero.Health <= BotrkDamage(hero)))
                 {
                     Player.CastSpell(itSlot, target);
                 }

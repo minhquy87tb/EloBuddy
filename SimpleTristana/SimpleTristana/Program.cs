@@ -55,7 +55,7 @@ namespace SimpleTristana
 
             Menu = MainMenu.AddMenu("Simple Tristana", "simpleTrist");
             Menu.AddGroupLabel("Simple Tristana");
-            Menu.AddLabel("Version: " + "1.0.3.0 - 09.10.2015 09:41 GMT+2");
+            Menu.AddLabel("Version: " + "1.0.3.1 - 09.10.2015 09:41 GMT+2");
             Menu.AddLabel("New: " + "Anti Gapcloser");
             Menu.AddSeparator();
             Menu.AddLabel("By Pataxx");
@@ -120,7 +120,6 @@ namespace SimpleTristana
         }
         private static void Game_OnTick(EventArgs args)
         {
-            TargetSelector2.ClearCurTarget(_Player.AttackRange);
              if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
              {
                  Combo();
@@ -148,9 +147,8 @@ namespace SimpleTristana
         // Not tested yet, took it from my old L# project
         private static void GameObject_OnCreate(GameObject sender, EventArgs args)
         {
-            
-            var kitty = HeroManager.Enemies.Find(h => h.ChampionName.Equals("Rengar"));
-            var khazix = HeroManager.Enemies.Find(h => h.ChampionName.Equals("Khazix"));
+            var kitty = EntityManager.Heroes.Enemies.Find(k => k.ChampionName.Equals("Rengar"));
+            var khazix = EntityManager.Heroes.Enemies.Find(k => k.ChampionName.Equals("Khazix"));
 
             //AntiKittyCat-Untermenschenchamp #FAKURENGO
             if (kitty != null)
@@ -192,12 +190,11 @@ namespace SimpleTristana
         {
             var useR = KsMenu["useRKs"].Cast<CheckBox>().CurrentValue;
             var useW = KsMenu["useWKs"].Cast<CheckBox>().CurrentValue;
-
-            foreach (var target in HeroManager.Enemies.Where(hero => hero.IsValidTarget(W.Range) && !hero.IsDead && !hero.IsZombie && hero.HealthPercent <=25))
+            foreach (var target in EntityManager.Heroes.Enemies.Where(hero => hero.IsValidTarget(W.Range) && !hero.IsDead && !hero.IsZombie && hero.HealthPercent <= 25))
             {
                 if (useR && R.IsReady() && target.Health + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < RDamage(target))
                 {
-                        R.Cast(target);
+                    R.Cast(target);
                 }
 
                 if (useW && W.IsReady() && target.Health + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < WDamage(target))
@@ -214,10 +211,15 @@ namespace SimpleTristana
         //States
         private static void Combo()
         {
+            float test = 0;
             var target = TargetSelector2.GetTarget(900, DamageType.Physical);
+            var targetE = EntityManager.Heroes.Enemies.FirstOrDefault(a => a.HasBuff("tristanaecharge") && a.Distance(_Player) < _Player.AttackRange);
             if (target == null) return;
 
-           
+            if (targetE != null)
+                Orbwalker.ForcedTarget = targetE;
+
+            
             var useQ = ComboMenu["useQCombo"].Cast<CheckBox>().CurrentValue;
             var useE = ComboMenu["useECombo"].Cast<CheckBox>().CurrentValue;
             var useR = ComboMenu["useRCombo"].Cast<CheckBox>().CurrentValue;
@@ -227,10 +229,6 @@ namespace SimpleTristana
 
             if (Orbwalker.IsAutoAttacking) return;
 
-                if (!E.IsReady() && target.IsValidTarget(E.Range) && target.HasBuff("tristanaecharge"))
-                {
-                    Orbwalker.ForcedTarget = target;
-                }
                 if (useE && E.IsReady() && target.IsValidTarget(E.Range))
                 {
                     E.Cast(target);
@@ -248,10 +246,13 @@ namespace SimpleTristana
                 {
                     W.Cast(target);
                 }
-                if(useER && E.IsReady() && R.IsReady()&& target.HasBuff("tristanaecharge") && EDamage(target)*((0.3 * target.Buffs.Find(a => a.Name == "tristanaecharge").Count) +1)+RDamage(target) > target.Health + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue)
+                if(useER && !E.IsReady() && R.IsReady()&& targetE != null && EDamage(targetE)*((0.3 * targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count) +1)+RDamage(targetE) > targetE.Health + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue)
                 {
-                    R.Cast(target);
-                }
+                    test = Player.Instance.GetSpellDamage(targetE, SpellSlot.E,DamageLibrary.SpellStages.Default) + Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation) +Player.Instance.GetSpellDamage(targetE,SpellSlot.R);
+                    R.Cast(targetE);
+                    Chat.Print("meins: " + EDamage(targetE) * ((0.3 * targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count) + 1) + RDamage(targetE));
+                    Chat.Print("eb: " + test);
+            }
 
             
         } 
@@ -266,7 +267,7 @@ namespace SimpleTristana
 
             if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range))
             {
-                W.Cast(target);
+                E.Cast(target);
             }
             if (useQ && Q.IsReady() && target.IsValidTarget(Q.Range))
             {
@@ -278,14 +279,20 @@ namespace SimpleTristana
 
         private static void LaneClear()
         {
-            var minion = ObjectManager.Get<Obj_AI_Minion>().FirstOrDefault(a => a.IsEnemy && !a.IsDead && a.Distance(_Player) < _Player.AttackRange);
-            var tower = ObjectManager.Get<Obj_AI_Turret>().FirstOrDefault(a => a.IsEnemy && !a.IsDead && a.Distance(_Player) < _Player.AttackRange);
+            
+            var minion = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, Player.Instance.Position, _Player.AttackRange).FirstOrDefault(a => !a.IsDead);
+            var minionE = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, Player.Instance.Position, _Player.AttackRange).FirstOrDefault(a => a.HasBuff("tristanaecharge"));
+            var tower = EntityManager.Turrets.Enemies.FirstOrDefault(a => !a.IsDead && a.Distance(_Player) < _Player.AttackRange);
             if (minion == null)
                 if (tower == null)
                     return;
             var useQ = FarmMenu["useQLane"].Cast<CheckBox>().CurrentValue;
             var useE = FarmMenu["useELane"].Cast<CheckBox>().CurrentValue;
             var useET = FarmMenu["useELaneT"].Cast<CheckBox>().CurrentValue;
+            
+
+            if (minionE != null)
+                Orbwalker.ForcedTarget = minionE;
 
             if (useET && E.IsReady() && tower.IsValidTarget(E.Range))
             {
@@ -314,7 +321,7 @@ namespace SimpleTristana
         {
             if (MiscMenu["drawAA"].Cast<CheckBox>().CurrentValue)
             {
-                new Circle() { Color = Color.Red, BorderWidth = 1, Radius = Q.Range }.Draw(_Player.Position);
+                new Circle() { Color = Color.Red, BorderWidth = 1, Radius = E.Range }.Draw(_Player.Position);
             }
             if (MiscMenu["drawW"].Cast<CheckBox>().CurrentValue)
             {
