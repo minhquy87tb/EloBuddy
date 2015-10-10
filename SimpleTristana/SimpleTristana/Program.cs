@@ -22,6 +22,7 @@ namespace SimpleTristana
         public static Spell.Targeted E;
         public static Spell.Targeted R;
         public static int[] levelUps = { 2, 0, 1, 2, 2, 3, 2, 0 , 2, 0, 3, 0, 0, 1, 1, 3, 1, 1};
+        
         //MenuVars
         public static Menu Menu,
         ComboMenu,
@@ -45,6 +46,7 @@ namespace SimpleTristana
 
         private static void Game_OnStart(EventArgs args)
         {
+            if (!_Player.ChampionName.Contains("Tristana")) return;
             TargetSelector2.Init();
             Bootstrap.Init(null);
             uint level = (uint)Player.Instance.Level;
@@ -55,15 +57,12 @@ namespace SimpleTristana
 
             Menu = MainMenu.AddMenu("Simple Tristana", "simpleTrist");
             Menu.AddGroupLabel("Simple Tristana");
-            Menu.AddLabel("Version: " + "1.0.3.1 - 09.10.2015 09:41 GMT+2");
-            Menu.AddLabel("New: " + "Anti Gapcloser");
+            Menu.AddLabel("Version: " + "1.0.5.1 - 10.10.15 14:00 GMT+2");
             Menu.AddSeparator();
             Menu.AddLabel("By Pataxx");
             Menu.AddSeparator();
             Menu.AddLabel("Thanks to: Finndev, Hellsing, Fluxy");
             Menu.AddSeparator();
-            Menu.AddLabel("Features coming soon:");
-            Menu.AddLabel("Advanced W logic");
 
             ComboMenu = Menu.AddSubMenu("Combo", "SimpleCombo");
             ComboMenu.AddGroupLabel("Combo Settings");
@@ -78,26 +77,27 @@ namespace SimpleTristana
             HarassMenu.AddGroupLabel("Harass Settings");
             HarassMenu.Add("useQHarass", new CheckBox("Use Q", false));
             HarassMenu.Add("useEHarass", new CheckBox("Use E", false));
+            HarassMenu.Add("manaHarass", new Slider("Manaslider", 35, 0, 100));
 
             FarmMenu = Menu.AddSubMenu("Laneclear", "SimpleClear");
             FarmMenu.AddGroupLabel("Laneclear Settings");
             FarmMenu.Add("useQLane", new CheckBox("Use Q", false));
             FarmMenu.Add("useELane", new CheckBox("Use E", false));
             FarmMenu.Add("useELaneT", new CheckBox("Use E on Tower", false));
+            FarmMenu.Add("manaFarm", new Slider("Manaslider", 50, 0, 100));
 
             KsMenu = Menu.AddSubMenu("Killsteal", "SimpleKS");
             KsMenu.AddGroupLabel("Killsteal Settings");
             KsMenu.Add("useRKs", new CheckBox("Use R", true));
-            KsMenu.AddGroupLabel("You wanna die? Enable this:");
             KsMenu.Add("useWKs", new CheckBox("Use W", false));
 
 
 
             MiscMenu = Menu.AddSubMenu("Misc", "SimpleDraw");
             MiscMenu.AddGroupLabel("Finisher Tweaks");
-            MiscMenu.Add("ERBuffer", new Slider("E-R Damage-Buffer", 25, 0, 500));
-            MiscMenu.Add("RBuffer", new Slider("R Damage-Buffer", 25, 0, 500));
-            MiscMenu.Add("WBuffer", new Slider("W Damage-Buffer", 25, 0, 500));
+            MiscMenu.Add("ERBuffer", new Slider("E-R Damage-Buffer", 60, 0, 500));
+            MiscMenu.Add("RBuffer", new Slider("R Damage-Buffer", 60, 0, 500));
+            MiscMenu.Add("WBuffer", new Slider("W Damage-Buffer", 50, 0, 500));
             MiscMenu.AddGroupLabel("Anti-Gapcloser");
             MiscMenu.Add("antiGC", new CheckBox("Basic Anti-Gapcloser", true));
             MiscMenu.Add("antiKitty", new CheckBox("Anti Rengar", true));
@@ -181,7 +181,7 @@ namespace SimpleTristana
                     R.Cast(target);
                 }
 
-                if (useW && W.IsReady() && target.Health < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default))
+                if (useW && W.IsReady() && target.Health < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1)
                 {
                     W.Cast(target);
                 }
@@ -225,7 +225,7 @@ namespace SimpleTristana
                     R.Cast(target);
                 }
 
-                if (useWf && W.IsReady()&& target.IsValidTarget(W.Range) && target.Health + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default))
+                if (useWf && W.IsReady()&& target.IsValidTarget(W.Range) && target.Health + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1)
                 {
                     W.Cast(target);
                 }
@@ -245,7 +245,7 @@ namespace SimpleTristana
             var useE = HarassMenu["useEHarass"].Cast<CheckBox>().CurrentValue;
             if (Orbwalker.IsAutoAttacking) return;
 
-            if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range))
+            if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range) && _Player.ManaPercent > HarassMenu["manaHarass"].Cast<Slider>().CurrentValue)
             {
                 E.Cast(target);
             }
@@ -274,12 +274,12 @@ namespace SimpleTristana
             if (minionE != null)
                 Orbwalker.ForcedTarget = minionE;
 
-            if (useET && E.IsReady() && tower.IsValidTarget(E.Range))
+            if (useET && E.IsReady() && tower.IsValidTarget(E.Range) && _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue)
             {
                 E.Cast(tower);
             }
 
-            if (useE && E.IsReady() && minion.IsValidTarget(E.Range))
+            if (useE && E.IsReady() && minion.IsValidTarget(E.Range) && _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue)
             {
                 if (useET && !tower.IsValidTarget(E.Range))
                     E.Cast(minion);
@@ -315,11 +315,17 @@ namespace SimpleTristana
         //Auto-Levelup
         private static void Game_OnUpdate(EventArgs args)
         {
-            if(MiscMenu["autoLv"].Cast<CheckBox>().CurrentValue)
+            uint level = (uint)Player.Instance.Level;
+
+            Q = new Spell.Active(SpellSlot.Q, 543 + level * 7);
+            W = new Spell.Skillshot(SpellSlot.W, 825, SkillShotType.Circular, (int)0.25f, Int32.MaxValue, (int)80f);
+            E = new Spell.Targeted(SpellSlot.E, 543 + level * 7);
+            R = new Spell.Targeted(SpellSlot.R, 543 + level * 7);
+
+            if (MiscMenu["autoLv"].Cast<CheckBox>().CurrentValue)
             { 
                 if (_Player.Spellbook.GetSpell(SpellSlot.Q).Level + _Player.Spellbook.GetSpell(SpellSlot.W).Level + _Player.Spellbook.GetSpell(SpellSlot.E).Level + _Player.Spellbook.GetSpell(SpellSlot.R).Level < _Player.Level)
                 {
-                    
                     int[] levels = new int[] { 0, 0, 0, 0 };
                     for (int i = 0; i < ObjectManager.Player.Level; i++)
                     {
