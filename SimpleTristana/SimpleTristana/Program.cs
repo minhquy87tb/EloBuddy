@@ -165,22 +165,6 @@ namespace SimpleTristana
             }
         }
 
-        //Skills      
-        public static float RDamage(Obj_AI_Base target)
-        {
-            return _Player.CalculateDamageOnUnit(target, DamageType.Magical,
-                (float)(new[] { 300, 400, 500 }[Program.R.Level] + 1.0 * _Player.FlatMagicDamageMod));
-        }
-        public static float WDamage(Obj_AI_Base target)
-        {
-            return _Player.CalculateDamageOnUnit(target, DamageType.Magical,
-                            (float)(new[] { 80, 105, 130, 155, 180 }[Program.W.Level] + 0.5 * _Player.FlatMagicDamageMod));
-        }
-        public static float EDamage(Obj_AI_Base target)
-        {
-            return _Player.CalculateDamageOnUnit(target, DamageType.Physical,
-                                        (float)(new[] { 60, 70, 80, 90, 100 }[Program.E.Level - 1] + new[] { 0.5, 0.65, 0.80, 0.95, 1.1 }[Program.E.Level - 1] * _Player.FlatPhysicalDamageMod + 0.5 * _Player.FlatMagicDamageMod + (new[] { 18, 21, 24, 27, 30 }[Program.E.Level - 1] + new[] { 0.15, 0.195, 0.24, 0.285, 0.33 }[Program.E.Level - 1]+ 0.15 * _Player.FlatMagicDamageMod)));
-        }
         //---------------------------
         //---------------------------
         //---------------------------
@@ -192,12 +176,12 @@ namespace SimpleTristana
             var useW = KsMenu["useWKs"].Cast<CheckBox>().CurrentValue;
             foreach (var target in EntityManager.Heroes.Enemies.Where(hero => hero.IsValidTarget(W.Range) && !hero.IsDead && !hero.IsZombie && hero.HealthPercent <= 25))
             {
-                if (useR && R.IsReady() && target.Health + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < RDamage(target))
+                if (useR && R.IsReady() && target.Health < Player.Instance.GetSpellDamage(target, SpellSlot.R, DamageLibrary.SpellStages.Default))
                 {
                     R.Cast(target);
                 }
 
-                if (useW && W.IsReady() && target.Health + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < WDamage(target))
+                if (useW && W.IsReady() && target.Health < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default))
                 {
                     W.Cast(target);
                 }
@@ -211,7 +195,6 @@ namespace SimpleTristana
         //States
         private static void Combo()
         {
-            float test = 0;
             var target = TargetSelector2.GetTarget(900, DamageType.Physical);
             var targetE = EntityManager.Heroes.Enemies.FirstOrDefault(a => a.HasBuff("tristanaecharge") && a.Distance(_Player) < _Player.AttackRange);
             if (target == null) return;
@@ -237,22 +220,19 @@ namespace SimpleTristana
                 {
                     Q.Cast();
                 }
-                if (useR && R.IsReady() && target.IsValidTarget(R.Range) && target.Health + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < RDamage(target))
+                if (useR && R.IsReady() && target.IsValidTarget(R.Range) && target.Health + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.R, DamageLibrary.SpellStages.Default))
                 {
                     R.Cast(target);
                 }
 
-                if (useWf && W.IsReady()&& target.IsValidTarget(W.Range) && target.Health + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < WDamage(target))
+                if (useWf && W.IsReady()&& target.IsValidTarget(W.Range) && target.Health + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default))
                 {
                     W.Cast(target);
                 }
-                if(useER && !E.IsReady() && R.IsReady()&& targetE != null && EDamage(targetE)*((0.3 * targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count) +1)+RDamage(targetE) > targetE.Health + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue)
+                if (useER && !E.IsReady() && R.IsReady() && targetE != null && Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Default) + Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation) + Player.Instance.GetSpellDamage(targetE, SpellSlot.R) > targetE.Health + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue)
                 {
-                    test = Player.Instance.GetSpellDamage(targetE, SpellSlot.E,DamageLibrary.SpellStages.Default) + Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation) +Player.Instance.GetSpellDamage(targetE,SpellSlot.R);
                     R.Cast(targetE);
-                    //Chat.Print("meins: " + EDamage(targetE) * ((0.3 * targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count) + 1) + RDamage(targetE));
-                    //Chat.Print("eb: " + test);
-            }
+                }
 
             
         } 
