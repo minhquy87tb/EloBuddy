@@ -47,7 +47,6 @@ namespace SimpleTristana
         private static void Game_OnStart(EventArgs args)
         {
             if (!_Player.ChampionName.Contains("Tristana")) return;
-            TargetSelector2.Init();
             Bootstrap.Init(null);
             uint level = (uint)Player.Instance.Level;
             Q = new Spell.Active(SpellSlot.Q, 543 + level * 7);
@@ -195,13 +194,9 @@ namespace SimpleTristana
         //States
         private static void Combo()
         {
-            var target = TargetSelector2.GetTarget(900, DamageType.Physical);
+            var target = TargetSelector.GetTarget(900, DamageType.Physical);
             var targetE = EntityManager.Heroes.Enemies.FirstOrDefault(a => a.HasBuff("tristanaecharge") && a.Distance(_Player) < _Player.AttackRange);
             if (target == null) return;
-
-            if (targetE != null)
-                Orbwalker.ForcedTarget = targetE;
-
             
             var useQ = ComboMenu["useQCombo"].Cast<CheckBox>().CurrentValue;
             var useE = ComboMenu["useECombo"].Cast<CheckBox>().CurrentValue;
@@ -239,7 +234,7 @@ namespace SimpleTristana
 
         private static void Harass()
         {
-            var target = TargetSelector2.GetTarget(900, DamageType.Physical);
+            var target = TargetSelector.GetTarget(900, DamageType.Physical);
             if (target == null) return;
             var useQ = HarassMenu["useQHarass"].Cast<CheckBox>().CurrentValue;
             var useE = HarassMenu["useEHarass"].Cast<CheckBox>().CurrentValue;
@@ -270,10 +265,6 @@ namespace SimpleTristana
             var useE = FarmMenu["useELane"].Cast<CheckBox>().CurrentValue;
             var useET = FarmMenu["useELaneT"].Cast<CheckBox>().CurrentValue;
             
-
-            if (minionE != null)
-                Orbwalker.ForcedTarget = minionE;
-
             if (useET && E.IsReady() && tower.IsValidTarget(E.Range) && _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue)
             {
                 E.Cast(tower);
