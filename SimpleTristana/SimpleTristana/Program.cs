@@ -230,12 +230,10 @@ namespace SimpleTristana
                 {
                     W.Cast(target);
                 }
-                if (useER && !E.IsReady() && R.IsReady() && targetE != null && Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Default) + Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation) + Player.Instance.GetSpellDamage(targetE, SpellSlot.R) > targetE.Health + targetE.AttackShield + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue)
+                if (useER && !E.IsReady() && R.IsReady() && targetE != null && Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Default) + (targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count * Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation)) + Player.Instance.GetSpellDamage(targetE, SpellSlot.R) > targetE.Health + targetE.AttackShield + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue)
                 {
                     R.Cast(targetE);
                 }
-
-            
         } 
 
         private static void Harass()
