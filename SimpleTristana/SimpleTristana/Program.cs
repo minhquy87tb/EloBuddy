@@ -56,9 +56,13 @@ namespace SimpleTristana
 
             Menu = MainMenu.AddMenu("Simple Tristana", "simpleTrist");
             Menu.AddGroupLabel("Simple Tristana");
-            Menu.AddLabel("Version: " + "1.0.5.1 - 10.10.15 14:00 GMT+2");
+            Menu.AddLabel("Version: " + "1.0.6.0 - 13.10.15 07:16 GMT+2");
             Menu.AddSeparator();
             Menu.AddLabel("By Pataxx");
+            Menu.AddSeparator();
+            Menu.AddLabel("Changes: W doesn't towerdive or jump into multiple people anymore!");
+            Menu.AddLabel("Changes: Manasliders are disabled du to SDK bug. Will be re-enabled as soon SDK is fixed!");
+            Menu.AddSeparator();
             Menu.AddSeparator();
             Menu.AddLabel("Thanks to: Finndev, Hellsing, Fluxy");
             Menu.AddSeparator();
@@ -175,12 +179,13 @@ namespace SimpleTristana
             var useW = KsMenu["useWKs"].Cast<CheckBox>().CurrentValue;
             foreach (var target in EntityManager.Heroes.Enemies.Where(hero => hero.IsValidTarget(W.Range) && !hero.IsDead && !hero.IsZombie && hero.HealthPercent <= 25))
             {
-                if (useR && R.IsReady() && target.Health < Player.Instance.GetSpellDamage(target, SpellSlot.R, DamageLibrary.SpellStages.Default))
+                var nearTurret = EntityManager.Turrets.Enemies.FirstOrDefault(a => !a.IsDead && a.Distance(target) <= 775 + _Player.BoundingRadius + (target.BoundingRadius / 2) + 44.2); //yolo, should work
+                if (useR && R.IsReady() && target.Health + target.AttackShield < Player.Instance.GetSpellDamage(target, SpellSlot.R, DamageLibrary.SpellStages.Default))
                 {
                     R.Cast(target);
                 }
 
-                if (useW && W.IsReady() && target.Health < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1)
+                if (useW && W.IsReady() && target.Health + target.AttackShield < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1 && nearTurret == null)
                 {
                     W.Cast(target);
                 }
@@ -197,7 +202,8 @@ namespace SimpleTristana
             var target = TargetSelector.GetTarget(900, DamageType.Physical);
             var targetE = EntityManager.Heroes.Enemies.FirstOrDefault(a => a.HasBuff("tristanaecharge") && a.Distance(_Player) < _Player.AttackRange);
             if (target == null) return;
-            
+            var nearTurret = EntityManager.Turrets.Enemies.FirstOrDefault(a => !a.IsDead && a.Distance(target) <= 775 + _Player.BoundingRadius + (target.BoundingRadius/2) + 44.2); //yolo, should work
+
             var useQ = ComboMenu["useQCombo"].Cast<CheckBox>().CurrentValue;
             var useE = ComboMenu["useECombo"].Cast<CheckBox>().CurrentValue;
             var useR = ComboMenu["useRCombo"].Cast<CheckBox>().CurrentValue;
@@ -215,16 +221,16 @@ namespace SimpleTristana
                 {
                     Q.Cast();
                 }
-                if (useR && R.IsReady() && target.IsValidTarget(R.Range) && target.Health + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.R, DamageLibrary.SpellStages.Default))
+                if (useR && R.IsReady() && target.IsValidTarget(R.Range) && target.Health + targetE.AttackShield + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.R, DamageLibrary.SpellStages.Default))
                 {
                     R.Cast(target);
                 }
 
-                if (useWf && W.IsReady()&& target.IsValidTarget(W.Range) && target.Health + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1)
+                if (useWf && W.IsReady() && target.IsValidTarget(W.Range) && target.Health + targetE.AttackShield + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1 && nearTurret == null)
                 {
                     W.Cast(target);
                 }
-                if (useER && !E.IsReady() && R.IsReady() && targetE != null && Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Default) + Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation) + Player.Instance.GetSpellDamage(targetE, SpellSlot.R) > targetE.Health + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue)
+                if (useER && !E.IsReady() && R.IsReady() && targetE != null && Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Default) + Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation) + Player.Instance.GetSpellDamage(targetE, SpellSlot.R) > targetE.Health + targetE.AttackShield + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue)
                 {
                     R.Cast(targetE);
                 }
@@ -240,7 +246,7 @@ namespace SimpleTristana
             var useE = HarassMenu["useEHarass"].Cast<CheckBox>().CurrentValue;
             if (Orbwalker.IsAutoAttacking) return;
 
-            if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range) && _Player.ManaPercent > HarassMenu["manaHarass"].Cast<Slider>().CurrentValue)
+            if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range)/* && _Player.ManaPercent > HarassMenu["manaHarass"].Cast<Slider>().CurrentValue*/)
             {
                 E.Cast(target);
             }
@@ -265,12 +271,12 @@ namespace SimpleTristana
             var useE = FarmMenu["useELane"].Cast<CheckBox>().CurrentValue;
             var useET = FarmMenu["useELaneT"].Cast<CheckBox>().CurrentValue;
             
-            if (useET && E.IsReady() && tower.IsValidTarget(E.Range) && _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue)
+            if (useET && E.IsReady() && tower.IsValidTarget(E.Range) /*&& _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue*/)
             {
                 E.Cast(tower);
             }
 
-            if (useE && E.IsReady() && minion.IsValidTarget(E.Range) && _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue)
+            if (useE && E.IsReady() && minion.IsValidTarget(E.Range)/* && _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue*/)
             {
                 if (useET && !tower.IsValidTarget(E.Range))
                     E.Cast(minion);
