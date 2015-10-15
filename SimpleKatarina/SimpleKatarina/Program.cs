@@ -11,6 +11,7 @@ using EloBuddy.SDK.Menu;
 using EloBuddy.SDK.Menu.Values;
 using EloBuddy.SDK.Rendering;
 using Color = System.Drawing.Color;
+using SpellData = SimpleKatarina.DamageIndicator.SpellData; // Thanks Fluxy :)
 
 
 namespace SimpleKatarina
@@ -25,6 +26,7 @@ namespace SimpleKatarina
         private static Spell.Targeted _ignite;
         private static float _rTick = 0;
         private static bool none;
+        public static DamageIndicator.DamageIndicator Indicator;
         //MenuVars
         public static Menu Menu,
         ComboMenu,
@@ -113,7 +115,8 @@ namespace SimpleKatarina
             MiscMenu.Add("wardJump", new CheckBox("Ward Jump (use Flee mode)", true));
             MiscMenu.Add("isKillable", new CheckBox("Draw if Killable", true));
             //Activator.init();
-
+            Indicator = new DamageIndicator.DamageIndicator();
+            Indicator.Add("Combo", new SpellData(0, DamageType.True, Color.Aqua));
 
             Game.OnTick += Game_OnTick;
             Player.OnIssueOrder += Player_OnIssueOrder;
@@ -124,8 +127,8 @@ namespace SimpleKatarina
         private static void Game_OnTick(EventArgs args)
         {
             if (_Player.IsDead) return;
-
-            if(_rTick !=0)
+            
+            if (_rTick !=0)
                 checkCancel();
             if (!Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo) && !Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Flee) && !Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass) && !Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear) && !Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear) && !Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LastHit))
                 none = true;
@@ -197,7 +200,6 @@ namespace SimpleKatarina
                     _ignite.Cast(target);
                 }
             }
-            
         }
         //---------------------------
         //---------------------------
@@ -208,7 +210,7 @@ namespace SimpleKatarina
         {
             var target = TargetSelector.GetTarget(E.Range, DamageType.Magical);
             if (target == null) return;
-            var nearTurret = EntityManager.Turrets.Enemies.FirstOrDefault(a => !a.IsDead && a.Distance(target) <= 775 + _Player.BoundingRadius + target.BoundingRadius + 44.2); //yolo, should work
+            var nearTurret = EntityManager.Turrets.Enemies.FirstOrDefault(a => !a.IsDead && a.Distance(target) <= 775 + _Player.BoundingRadius + target.BoundingRadius + 45); //yolo, should work
             var useQ = ComboMenu["useQCombo"].Cast<CheckBox>().CurrentValue;
             var useW = ComboMenu["useWCombo"].Cast<CheckBox>().CurrentValue;
             var useE = ComboMenu["useECombo"].Cast<CheckBox>().CurrentValue;
@@ -284,7 +286,6 @@ namespace SimpleKatarina
         private static void Drawing_OnDraw(EventArgs args)
         {
             if (_Player.IsDead) return;
-
             if (MiscMenu["isKillable"].Cast<CheckBox>().CurrentValue)
             {
                 foreach (var unit in EntityManager.Heroes.Enemies.Where(u => u.IsValid && u.IsHPBarRendered))
@@ -293,6 +294,7 @@ namespace SimpleKatarina
                     var damage = ComboDMG(unit);
                     if (unit.Health + unit.MagicShield< damage)
                         Drawing.DrawText(hpPos.X - 10, hpPos.Y + 40, Color.Lime, "Is Killable");
+                    Indicator.Update("Combo", new SpellData((int)ComboDMG(unit), DamageType.Magical, Color.Aqua));
                 }
             }
 
@@ -348,7 +350,7 @@ namespace SimpleKatarina
             {
                 var wardIDs = new[] { ItemId.Farsight_Orb_Trinket, ItemId.Warding_Totem_Trinket, ItemId.Greater_Stealth_Totem_Trinket, ItemId.Greater_Vision_Totem_Trinket, ItemId.Stealth_Ward, ItemId.Sightstone, ItemId.Ruby_Sightstone, ItemId.Vision_Ward};
                 var use = _Player.InventoryItems.FirstOrDefault(a => wardIDs.Contains(a.Id) && a.CanUseItem());
-                var jumpto = ObjectManager.Get<Obj_AI_Base>().FirstOrDefault(a => a.Name.ToLower().Contains("ward") && a.Distance(_Player) <= 900);
+                var jumpto = ObjectManager.Get<Obj_AI_Base>().OrderBy(b => b.Distance(_Player)).LastOrDefault(a => a.Name.ToLower().Contains("ward") && a.Distance(_Player) <= 900 && Player.Instance.IsFacing(a));
                 if (jumpto != null)
                 {
                     E.Cast(jumpto);
@@ -367,14 +369,16 @@ namespace SimpleKatarina
             float x = 0;
 
             if (Q.IsReady())
-                x += Player.Instance.GetSpellDamage(enemy, SpellSlot.Q, DamageLibrary.SpellStages.Default);
+                x += Player.Instance.GetSpellDamage(enemy, SpellSlot.Q, DamageLibrary.SpellStages.Default) + Player.Instance.GetSpellDamage(enemy, SpellSlot.Q, DamageLibrary.SpellStages.Passive);
             if (W.IsReady())
                 x += Player.Instance.GetSpellDamage(enemy, SpellSlot.W, DamageLibrary.SpellStages.Default);
             if (E.IsReady())
                 x += Player.Instance.GetSpellDamage(enemy, SpellSlot.E, DamageLibrary.SpellStages.Default);
-            if (R.IsReady())
+            if (R.IsLearned && !R.IsOnCooldown)
                 x += Player.Instance.GetSpellDamage(enemy, SpellSlot.R, DamageLibrary.SpellStages.Default);
             return x;
         }
+
+
     }
 }
