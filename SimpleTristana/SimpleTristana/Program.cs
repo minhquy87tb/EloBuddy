@@ -33,7 +33,6 @@ namespace SimpleTristana
         InterruptorMenu,
         GapCloserMenu;
 
-
         static void Main(string[] args)
         {
             Loading.OnLoadingComplete += Game_OnStart;
@@ -202,6 +201,7 @@ namespace SimpleTristana
             var target = TargetSelector.GetTarget(900, DamageType.Physical);
             var targetE = EntityManager.Heroes.Enemies.FirstOrDefault(a => a.HasBuff("tristanaecharge") && a.Distance(_Player) < _Player.AttackRange);
             if (target == null) return;
+            if (targetE != null) Orbwalker.ForcedTarget = targetE;
             var nearTurret = EntityManager.Turrets.Enemies.FirstOrDefault(a => !a.IsDead && a.Distance(target) <= 775 + _Player.BoundingRadius + (target.BoundingRadius/2) + 44.2); //yolo, should work
 
             var useQ = ComboMenu["useQCombo"].Cast<CheckBox>().CurrentValue;
@@ -216,6 +216,7 @@ namespace SimpleTristana
                 if (useE && E.IsReady() && target.IsValidTarget(E.Range))
                 {
                     E.Cast(target);
+                    Orbwalker.ForcedTarget = target;
                 }
                 if (useQ && Q.IsReady() && target.IsValidTarget(Q.Range))
                 {
@@ -235,7 +236,6 @@ namespace SimpleTristana
                     R.Cast(targetE);
                 }
         } 
-
         private static void Harass()
         {
             var target = TargetSelector.GetTarget(900, DamageType.Physical);
@@ -244,18 +244,16 @@ namespace SimpleTristana
             var useE = HarassMenu["useEHarass"].Cast<CheckBox>().CurrentValue;
             if (Orbwalker.IsAutoAttacking) return;
 
-            if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range)/* && _Player.ManaPercent > HarassMenu["manaHarass"].Cast<Slider>().CurrentValue*/)
+            if (useE && E.IsReady() && E.Cast(target) && target.IsValidTarget(E.Range) && _Player.ManaPercent > HarassMenu["manaHarass"].Cast<Slider>().CurrentValue)
             {
                 E.Cast(target);
+
             }
             if (useQ && Q.IsReady() && target.IsValidTarget(Q.Range))
             {
                 Q.Cast();
             }
-
-
         }
-
         private static void LaneClear()
         {
             
@@ -269,12 +267,12 @@ namespace SimpleTristana
             var useE = FarmMenu["useELane"].Cast<CheckBox>().CurrentValue;
             var useET = FarmMenu["useELaneT"].Cast<CheckBox>().CurrentValue;
             
-            if (useET && E.IsReady() && tower.IsValidTarget(E.Range) /*&& _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue*/)
+            if (useET && E.IsReady() && tower.IsValidTarget(E.Range) && _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue)
             {
                 E.Cast(tower);
             }
 
-            if (useE && E.IsReady() && minion.IsValidTarget(E.Range)/* && _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue*/)
+            if (useE && E.IsReady() && minion.IsValidTarget(E.Range) && _Player.ManaPercent > FarmMenu["manaFarm"].Cast<Slider>().CurrentValue)
             {
                 if (useET && !tower.IsValidTarget(E.Range))
                     E.Cast(minion);
@@ -287,10 +285,6 @@ namespace SimpleTristana
             }
 
         }
-        //---------------------------
-        //---------------------------
-        //---------------------------
-
         //Drawings
         private static void Drawing_OnDraw(EventArgs args)
         {
