@@ -55,17 +55,17 @@ namespace SimpleTristana
 
             Menu = MainMenu.AddMenu("Simple Tristana", "simpleTrist");
             Menu.AddGroupLabel("Simple Tristana");
-            Menu.AddLabel("Version: " + "1.0.6.0 - 13.10.15 07:16 GMT+2");
+            Menu.AddLabel("Version: " + "1.0.6.1 - 21.10.15 12:00 GMT+2");
             Menu.AddSeparator();
             Menu.AddLabel("By Pataxx");
             Menu.AddSeparator();
-            Menu.AddLabel("Changes: W doesn't towerdive or jump into multiple people anymore!");
-            Menu.AddLabel("Changes: Manasliders are disabled du to SDK bug. Will be re-enabled as soon SDK is fixed!");
+            Menu.AddLabel("Changes: Some Tweaks, Readded Manasliders for testing");
+            Menu.AddLabel("Changes: Only uses W if you can jump back (manually yet)");
             Menu.AddSeparator();
             Menu.AddSeparator();
             Menu.AddLabel("Thanks to: Finndev, Hellsing, Fluxy");
             Menu.AddSeparator();
-
+            
             ComboMenu = Menu.AddSubMenu("Combo", "SimpleCombo");
             ComboMenu.AddGroupLabel("Combo Settings");
             ComboMenu.Add("useQCombo", new CheckBox("Use Q", true));
@@ -122,6 +122,7 @@ namespace SimpleTristana
         }
         private static void Game_OnTick(EventArgs args)
         {
+            if (_Player.IsDead) return;
              if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
              {
                  Combo();
@@ -184,7 +185,7 @@ namespace SimpleTristana
                     R.Cast(target);
                 }
 
-                if (useW && W.IsReady() && target.Health + target.AttackShield < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1 && nearTurret == null)
+                if (useW && W.IsReady() && target.Health + target.AttackShield < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1 && nearTurret == null && _Player.Mana >= 120)
                 {
                     W.Cast(target);
                 }
@@ -222,19 +223,20 @@ namespace SimpleTristana
                 {
                     Q.Cast();
                 }
-                if (useR && R.IsReady() && target.IsValidTarget(R.Range) && target.Health + targetE.AttackShield + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.R, DamageLibrary.SpellStages.Default))
+                if (useR && R.IsReady() && target.IsValidTarget(R.Range) && target.Health + target.AttackShield + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.R, DamageLibrary.SpellStages.Default))
                 {
                     R.Cast(target);
                 }
 
-                if (useWf && W.IsReady() && target.IsValidTarget(W.Range) && target.Health + targetE.AttackShield + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1 && nearTurret == null)
+                if (useWf && W.IsReady() && target.IsValidTarget(W.Range) && target.Health + target.AttackShield + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1 && nearTurret == null)
                 {
                     W.Cast(target);
                 }
-                if (useER && !E.IsReady() && R.IsReady() && targetE != null && targetE.IsValidTarget(E.Range) && (targetE.Health + targetE.AttackShield + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue) - (Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Default) + (targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count * Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation))) < Player.Instance.GetSpellDamage(targetE, SpellSlot.R))
-                {
-                    R.Cast(targetE);
-                }
+                if(targetE !=null)
+                    if (useER && !E.IsReady() && R.IsReady() && targetE.IsValidTarget(R.Range) && (targetE.Health + targetE.AllShield + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue) - (Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Default) + (targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count * Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation))) < Player.Instance.GetSpellDamage(targetE, SpellSlot.R))
+                    {
+                        R.Cast(targetE);
+                    }
         } 
         private static void Harass()
         {
