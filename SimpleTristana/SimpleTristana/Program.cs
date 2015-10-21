@@ -202,7 +202,7 @@ namespace SimpleTristana
             var target = TargetSelector.GetTarget(900, DamageType.Physical);
             var targetE = EntityManager.Heroes.Enemies.FirstOrDefault(a => a.HasBuff("tristanaecharge") && a.Distance(_Player) < _Player.AttackRange);
             if (target == null) return;
-            if (targetE != null && targetE.Distance(_Player) < _Player.AttackRange) Orbwalker.ForcedTarget = targetE;
+            // if (targetE != null) Orbwalker.ForcedTarget = targetE; -- Still buggy Orbwalker
             var nearTurret = EntityManager.Turrets.Enemies.FirstOrDefault(a => !a.IsDead && a.Distance(target) <= 775 + _Player.BoundingRadius + (target.BoundingRadius/2) + 44.2); //yolo, should work
 
             var useQ = ComboMenu["useQCombo"].Cast<CheckBox>().CurrentValue;
