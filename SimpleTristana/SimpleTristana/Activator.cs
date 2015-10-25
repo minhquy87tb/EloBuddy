@@ -164,12 +164,12 @@ namespace SimpleTristana
             var hpotionCheck = _Player.InventoryItems.FirstOrDefault(a => a.Id == ItemId.Health_Potion);
             var mpotionCheck = _Player.InventoryItems.FirstOrDefault(a => a.Id == ItemId.Mana_Potion);
 
-            if (hpotionCheck !=null && Menu["useHP"].Cast<CheckBox>().CurrentValue && _Player.HealthPercent <= Menu["hpSlider"].Cast<Slider>().CurrentValue && !_Player.HasBuff("RegenerationPotion"))
+            if (hpotionCheck !=null && Menu["useHP"].Cast<CheckBox>().CurrentValue && _Player.HealthPercent <= Menu["hpSlider"].Cast<Slider>().CurrentValue && !_Player.HasBuff("RegenerationPotion") && !_Player.IsInShopRange())
             {
                 var itSlot = hpotionCheck.SpellSlot;
                 Player.CastSpell(itSlot);
             }
-            if (mpotionCheck != null && Menu["useMP"].Cast<CheckBox>().CurrentValue && _Player.ManaPercent <= Menu["mpSlider"].Cast<Slider>().CurrentValue && !_Player.HasBuff("FlaskOfCrystalWater"))
+            if (mpotionCheck != null && Menu["useMP"].Cast<CheckBox>().CurrentValue && _Player.ManaPercent <= Menu["mpSlider"].Cast<Slider>().CurrentValue && !_Player.HasBuff("FlaskOfCrystalWater") && !_Player.IsInShopRange())
             {
                 var itSlot = mpotionCheck.SpellSlot;
                 Player.CastSpell(itSlot);

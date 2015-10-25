@@ -55,12 +55,11 @@ namespace SimpleTristana
 
             Menu = MainMenu.AddMenu("Simple Tristana", "simpleTrist");
             Menu.AddGroupLabel("Simple Tristana");
-            Menu.AddLabel("Version: " + "1.0.6.1 - 21.10.15 12:00 GMT+2");
+            Menu.AddLabel("Version: " + "1.0.6.2 - 25.10.15 12:00 GMT+2");
             Menu.AddSeparator();
             Menu.AddLabel("By Pataxx");
             Menu.AddSeparator();
-            Menu.AddLabel("Changes: Some Tweaks, Readded Manasliders for testing");
-            Menu.AddLabel("Changes: Only uses W if you can jump back (manually yet)");
+            Menu.AddLabel("Changes: Tweaked Activator");
             Menu.AddSeparator();
             Menu.AddSeparator();
             Menu.AddLabel("Thanks to: Finndev, Hellsing, Fluxy");
